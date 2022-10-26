@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PersonModel } from 'src/models/person.model';
 import { PersonSchema } from 'src/schemas/person.schema';
@@ -11,14 +21,24 @@ export class PersonController {
   ) {}
 
   @Post()
-  public create(@Body() body: PersonSchema): any {
-    console.log(body);
-    return { data: 'Created !' };
+  public async create(
+    @Body() body: PersonSchema,
+  ): Promise<{ data: PersonModel }> {
+    const personCreated = await this.model.save(body);
+    return { data: personCreated };
   }
 
   @Get(':id')
-  public getOne(): any {
-    return { data: 'Get One !' };
+  public async getOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ data: PersonModel }> {
+    const person = await this.model.findOne({ where: { id } });
+
+    if (!person) {
+      throw new NotFoundException(`Pessoa não encontrada com o id  ${id}`);
+    }
+
+    return { data: person };
   }
 
   @Get()
@@ -28,8 +48,18 @@ export class PersonController {
   }
 
   @Put(':id')
-  public update(): any {
-    return { data: 'Update !' };
+  public async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: PersonSchema,
+  ): Promise<{ data: PersonModel }> {
+    const person = await this.model.findOne({ where: { id } });
+
+    if (!person) {
+      throw new NotFoundException(`Pessoa não encontrada com o id  ${id}`);
+    }
+
+    await this.model.update({ id }, body);
+    return { data: await this.model.findOne({ where: { id } }) };
   }
 
   @Delete(':id')
