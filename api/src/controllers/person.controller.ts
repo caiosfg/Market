@@ -18,7 +18,7 @@ import { Repository } from 'typeorm';
 export class PersonController {
   constructor(
     @InjectRepository(PersonModel) private model: Repository<PersonModel>,
-  ) {}
+  ) { }
 
   @Post()
   public async create(
@@ -63,7 +63,17 @@ export class PersonController {
   }
 
   @Delete(':id')
-  public delete(): any {
-    return { data: 'Deleted !' };
+  public async delete(
+    @Param('id', ParseIntPipe) id: number
+  ): Promise<{ data: string }> {
+    const person = await this.model.findOne({ where: { id } });
+
+    if (!person) {
+      throw new NotFoundException(`Pessoa não encontrada com o id  ${id}`);
+    }
+
+    await this.model.delete(id);
+
+    return { data: `A pessoa com o id ${id} foi deletada com sucesso` };
   }
 }
